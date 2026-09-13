@@ -45,7 +45,11 @@ function publish(stageOnly=false){
   for(const folder of readdirSync(base)){
     const dir=join(base,folder),metadataFiles=readdirSync(dir).filter(f=>/^(darwin|windows)-(aarch64|x86_64)\.json$/.test(f));
     for(const file of metadataFiles){
-      const meta=JSON.parse(readFileSync(join(dir,file)));if(meta.version!==config().version || meta.appCommit!==pinned() || meta.desktopCommit!==run('git',['rev-parse','HEAD'],desktop))throw Error('Source/version mismatch');
+      const meta=JSON.parse(readFileSync(join(dir,file)));if(meta.version!==config().version || meta.appCommit!==pinned() || !/^[a-f0-9]{40}$/.test(meta.desktopCommit))throw Error('Source/version mismatch');
+      run('git',['merge-base','--is-ancestor',meta.desktopCommit,'origin/main'],desktop);
+      const sourceConfig=JSON.parse(run('git',['show',meta.desktopCommit+':src-tauri/tauri.conf.json'],desktop));
+      const sourcePin=run('git',['show',meta.desktopCommit+':app-source.properties'],desktop).match(/^revision=([a-f0-9]{40})$/m)?.[1];
+      if(sourceConfig.version!==meta.version || sourcePin!==meta.appCommit || sourceConfig.plugins.updater.pubkey!==config().plugins.updater.pubkey)throw Error('Artifact source configuration differs');
       const extension=meta.platform.startsWith('darwin-')?'.dmg':'.exe';if(meta.file!=='MARKPROTO-'+meta.version+'-'+meta.platform+extension)throw Error('Invalid artifact name');
       const artifact=join(dir,meta.file);if(createHash('sha256').update(readFileSync(artifact)).digest('hex')!==meta.sha256)throw Error('Artifact checksum mismatch');
       const channel=join(root,'channels',file);if(existsSync(channel)){const old=JSON.parse(readFileSync(channel));if(old.version===meta.version){console.log('Already published: '+meta.platform);continue;}const a=old.version.split('.').map(Number),b=meta.version.split('.').map(Number);if(a[0]>b[0] || a[0]===b[0]&&(a[1]>b[1] || a[1]===b[1]&&a[2]>=b[2]))throw Error('Version must increase');}
