@@ -45,7 +45,7 @@ function publish(stageOnly=false){
   for(const folder of readdirSync(base)){
     const dir=join(base,folder),metadataFiles=readdirSync(dir).filter(f=>/^(darwin|windows)-(aarch64|x86_64)\.json$/.test(f));
     for(const file of metadataFiles){
-      const meta=JSON.parse(readFileSync(join(dir,file)));if(meta.version!==config().version || meta.appCommit!==pinned() || !/^[a-f0-9]{40}$/.test(meta.desktopCommit))throw Error('Source/version mismatch');
+      const meta=JSON.parse(readFileSync(join(dir,file)));if(meta.platform+'.json'!==file)throw Error('Artifact platform mismatch');if(meta.version!==config().version || meta.appCommit!==pinned() || !/^[a-f0-9]{40}$/.test(meta.desktopCommit))throw Error('Source/version mismatch');
       run('git',['merge-base','--is-ancestor',meta.desktopCommit,'origin/main'],desktop);
       const sourceConfig=JSON.parse(run('git',['show',meta.desktopCommit+':src-tauri/tauri.conf.json'],desktop));
       const sourcePin=run('git',['show',meta.desktopCommit+':app-source.properties'],desktop).match(/^revision=([a-f0-9]{40})$/m)?.[1];
