@@ -13,6 +13,7 @@
 node scripts/release.js build        # 현재 OS 로컬 + 다른 OS CI
 node scripts/release.js build local  # 현재 OS만
 node scripts/release.js build remote # 다른 OS만
+node scripts/release.js stage        # 비공개 초안으로 업로드하여 검토함
 node scripts/release.js publish      # 검증된 산출물 서명·업로드·채널 반영
 ```
 

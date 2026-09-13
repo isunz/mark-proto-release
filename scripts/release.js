@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync,writeFileSync,existsSync,mkdirSync,cpSync,readdirSync } from 'node:fs';
 import { resolve,dirname,join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,8 +36,9 @@ async function build(which='both'){
   if(runId){visible('gh',['run','watch',String(runId),'--repo',desktopRepo,'--exit-status','--interval','30']);const directory=join(artifactRoot(),remote);mkdirSync(directory,{recursive:true});visible('gh',['run','download',String(runId),'--repo',desktopRepo,'--name','desktop-'+remote,'--dir',directory]);}
   console.log('Build outputs: '+artifactRoot());
 }
-function publish(){
-  if(JSON.parse(run('gh',['repo','view',repository,'--json','isPrivate'])).isPrivate)throw Error('Public artifact distribution requires approved repository visibility');
+function publish(stageOnly=false){
+  mkdirSync(join(root,'channels'),{recursive:true});
+  if(!stageOnly && JSON.parse(run('gh',['repo','view',repository,'--json','isPrivate'])).isPrivate)throw Error('Public artifact distribution requires approved repository visibility');
   cleanPushed(root);
   const key=process.env.MARKPROTO_SIGNING_KEY || join(homedir(),'.config/markproto-release/updater.key');if(!existsSync(key))throw Error('Update signing key is missing');
   const base=artifactRoot();if(!existsSync(base))throw Error('Build first');
@@ -48,12 +49,21 @@ function publish(){
       const extension=meta.platform.startsWith('darwin-')?'.dmg':'.exe';if(meta.file!=='MARKPROTO-'+meta.version+'-'+meta.platform+extension)throw Error('Invalid artifact name');
       const artifact=join(dir,meta.file);if(createHash('sha256').update(readFileSync(artifact)).digest('hex')!==meta.sha256)throw Error('Artifact checksum mismatch');
       const channel=join(root,'channels',file);if(existsSync(channel)){const old=JSON.parse(readFileSync(channel));if(old.version===meta.version){console.log('Already published: '+meta.platform);continue;}const a=old.version.split('.').map(Number),b=meta.version.split('.').map(Number);if(a[0]>b[0] || a[0]===b[0]&&(a[1]>b[1] || a[1]===b[1]&&a[2]>=b[2]))throw Error('Version must increase');}
-      run('npm',['run','tauri','--','signer','sign','-f',key,'-p',process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '',artifact],desktop);
+      run(process.execPath,[join(desktop,'node_modules/@tauri-apps/cli/tauri.js'),'signer','sign','-f',key,'-p',process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '',artifact],desktop);
       const tag='v'+meta.version+'-'+meta.platform;
       const checksum=join(dir,'SHA256SUMS');writeFileSync(checksum,meta.sha256+'  '+meta.file+'\n');
       const notes=join(dir,'release-notes.md');writeFileSync(notes,'MARKPROTO '+meta.version+' ('+meta.platform+')\n\n'+(extension==='.dmg'?'DMG를 열고 앱을 응용 프로그램 폴더로 끌어다 놓아 대치함. Apple 공증은 아직 적용하지 않음.':'NSIS 설치 파일 또는 앱의 업데이트 버튼으로 설치함.')+'\n\n아바타·프로필 사진 변경·업데이트 확인을 제공함.\n');
       // Draft keeps partial uploads out of update discovery. Existing tags never get overwritten.
-      run('gh',['release','create',tag,'--repo',repository,'--draft','--title','MARKPROTO '+meta.version+' · '+meta.platform,'--notes-file',notes,artifact,artifact+'.sig',checksum,join(dir,file)]);
+      const existing=spawnSync('gh',['release','view',tag,'--repo',repository,'--json','tagName'],{encoding:'utf8',stdio:['ignore','pipe','pipe']});
+      if(existing.status===0){
+        const verified=join(dir,'remote-verification');mkdirSync(verified,{recursive:true});
+        run('gh',['release','download',tag,'--repo',repository,'--dir',verified,'--clobber','--pattern',meta.file,'--pattern',file]);
+        const remoteMeta=JSON.parse(readFileSync(join(verified,file)));
+        if(remoteMeta.desktopCommit!==meta.desktopCommit || remoteMeta.appCommit!==meta.appCommit || createHash('sha256').update(readFileSync(join(verified,meta.file))).digest('hex')!==meta.sha256)throw Error('Existing release differs; do not overwrite');
+      }else{
+        run('gh',['release','create',tag,'--repo',repository,'--draft','--title','MARKPROTO '+meta.version+' · '+meta.platform,'--notes-file',notes,artifact,artifact+'.sig',checksum,join(dir,file)]);
+      }
+      if(stageOnly){console.log('Draft ready: '+tag);continue;}
       run('gh',['release','edit',tag,'--repo',repository,'--draft=false']);
       const manifest={version:meta.version,notes:'MARKPROTO '+meta.version,pub_date:new Date().toISOString(),url:'https://github.com/'+repository+'/releases/download/'+tag+'/'+meta.file,signature:readFileSync(artifact+'.sig','utf8').trim()};
       writeFileSync(channel,JSON.stringify(manifest,null,2)+'\n');
@@ -62,4 +72,4 @@ function publish(){
   }
 }
 const [command,which]=process.argv.slice(2);
-if(command==='build')await build(which);else if(command==='publish')publish();else throw Error('Use: node scripts/release.js build [local|remote] | publish');
+if(command==='build')await build(which);else if(command==='publish')publish();else if(command==='stage')publish(true);else throw Error('Use: node scripts/release.js build [local|remote] | publish');
