@@ -57,7 +57,8 @@ function publish(stageOnly=false){
       const existing=spawnSync('gh',['release','view',tag,'--repo',repository,'--json','tagName'],{encoding:'utf8',stdio:['ignore','pipe','pipe']});
       if(existing.status===0){
         const verified=join(dir,'remote-verification');mkdirSync(verified,{recursive:true});
-        run('gh',['release','download',tag,'--repo',repository,'--dir',verified,'--clobber','--pattern',meta.file,'--pattern',file]);
+        run('gh',['release','download',tag,'--repo',repository,'--dir',verified,'--clobber','--pattern',meta.file,'--pattern',file,'--pattern',meta.file+'.sig']);
+        cpSync(join(verified,meta.file+'.sig'),artifact+'.sig');
         const remoteMeta=JSON.parse(readFileSync(join(verified,file)));
         if(remoteMeta.desktopCommit!==meta.desktopCommit || remoteMeta.appCommit!==meta.appCommit || createHash('sha256').update(readFileSync(join(verified,meta.file))).digest('hex')!==meta.sha256)throw Error('Existing release differs; do not overwrite');
       }else{
