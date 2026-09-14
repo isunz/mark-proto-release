@@ -4,7 +4,9 @@ import { resolve,dirname,join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { createHash,randomUUID } from 'node:crypto';
-const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'), desktop=resolve(root,'../mark-proto-desktop'), app=resolve(root,'../mark-proto-app');
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+const desktop=resolve(root,process.env.MARKPROTO_DESKTOP_DIR || '../apps/desktop');
+const app=resolve(root,process.env.MARKPROTO_APP_DIR || '../packages/client');
 const repository='isunz/mark-proto-release', desktopRepo='isunz/mark-proto-desktop';
 function run(command,args,cwd=root){return execFileSync(command,args,{cwd,encoding:'utf8',stdio:['ignore','pipe','inherit']}).trim();}
 function visible(command,args,cwd=root){execFileSync(command,args,{cwd,stdio:'inherit'});}
@@ -56,7 +58,7 @@ function publish(stageOnly=false){
       run(process.execPath,[join(desktop,'node_modules/@tauri-apps/cli/tauri.js'),'signer','sign','-f',key,'-p',process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '',artifact],desktop);
       const tag='v'+meta.version+'-'+meta.platform;
       const checksum=join(dir,'SHA256SUMS');writeFileSync(checksum,meta.sha256+'  '+meta.file+'\n');
-      const notes=join(dir,'release-notes.md');writeFileSync(notes,'MARKPROTO '+meta.version+' ('+meta.platform+')\n\n'+(extension==='.dmg'?'DMG를 열고 앱을 응용 프로그램 폴더로 끌어다 놓아 대치함. Apple 공증은 아직 적용하지 않음.':'NSIS 설치 파일 또는 앱의 업데이트 버튼으로 설치함.')+'\n\n아바타·프로필 사진 변경·업데이트 확인을 제공함.\n');
+      const notes=join(dir,'release-notes.md');writeFileSync(notes,'MARKPROTO '+meta.version+' ('+meta.platform+')\n\n'+(extension==='.dmg'?'DMG를 열고 앱을 응용 프로그램 폴더로 끌어다 놓아 대치함. Apple 공증은 아직 적용하지 않음.':'NSIS 설치 파일 또는 앱의 업데이트 버튼으로 설치함.')+'\n\n페이지 링크를 복사해 다른 문서에서 연결할 수 있음. 편집 중에는 Windows Ctrl 클릭·macOS Cmd 클릭으로 이동하며 터치에서는 탭으로 열 수 있음.\n');
       // Draft keeps partial uploads out of update discovery. Existing tags never get overwritten.
       const existing=spawnSync('gh',['release','view',tag,'--repo',repository,'--json','tagName'],{encoding:'utf8',stdio:['ignore','pipe','pipe']});
       if(existing.status===0){

@@ -9,13 +9,15 @@
 - Windows는 앱의 업데이트 버튼으로 설치 후 재시작함. 최초 버전에는 업데이트 기능이 없으므로 최초 1회 직접 설치가 필요함.
 
 ```bash
-# 형제 위치의 app·desktop 커밋/푸시 및 app-source.properties 고정 후 실행함
+# packages/client·apps/desktop 커밋/푸시 및 app-source.properties 고정 후 실행함
 node scripts/release.js build        # 현재 OS 로컬 + 다른 OS CI
 node scripts/release.js build local  # 현재 OS만
 node scripts/release.js build remote # 다른 OS만
 node scripts/release.js stage        # 비공개 초안으로 업로드하여 검토함
 node scripts/release.js publish      # 검증된 산출물 서명·업로드·채널 반영
 ```
+
+작업 공간의 로컬 경로는 `release/`이며 원격은 `isunz/mark-proto-release`임. 본체는 `../packages/client`, 데스크톱은 `../apps/desktop`을 사용함. 별도 배치는 `MARKPROTO_APP_DIR`·`MARKPROTO_DESKTOP_DIR`로 지정함. [명명 정책](../doc/policies/repository/README.md)을 따름.
 
 필수 도구: Node 22 이상, Git, gh 로그인, 로컬 Tauri 빌드 환경임. Windows는 Git Bash에서 실행함. 공개 배포는 저장소 공개 설정을 먼저 확인해야 함. 사용자 확정에 따라 배포 저장소는 공개임. 소스 저장소는 비공개로 유지함.
 
