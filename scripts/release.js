@@ -58,7 +58,7 @@ function publish(stageOnly=false){
       run(process.execPath,[join(desktop,'node_modules/@tauri-apps/cli/tauri.js'),'signer','sign','-f',key,'-p',process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '',artifact],desktop);
       const tag='v'+meta.version+'-'+meta.platform;
       const checksum=join(dir,'SHA256SUMS');writeFileSync(checksum,meta.sha256+'  '+meta.file+'\n');
-      const notes=join(dir,'release-notes.md');writeFileSync(notes,'MARKPROTO '+meta.version+' ('+meta.platform+')\n\n'+(extension==='.dmg'?'DMG를 열고 앱을 응용 프로그램 폴더로 끌어다 놓아 대치함. Apple 공증은 아직 적용하지 않음.':'NSIS 설치 파일 또는 앱의 업데이트 버튼으로 설치함.')+'\n\n- 설정에서 앱 상단과 팝업 제목줄의 크기를 조절하고 자동 저장함.\n- 상단 페이지 제목의 글꼴과 가독성을 개선함.\n- Windows 앱 메뉴를 테마와 어울리는 메뉴로 변경하고 좁은 창과 키보드 탐색을 지원함.\n- 블록·페이지·이모지·계정 메뉴를 바깥 클릭과 터치로 닫도록 개선함.\n');
+      const notes=join(dir,'release-notes.md');writeFileSync(notes,'MARKPROTO '+meta.version+' ('+meta.platform+')\n\n'+(extension==='.dmg'?'DMG를 열고 앱을 응용 프로그램 폴더로 끌어다 놓아 대치함. Apple 공증은 아직 적용하지 않음.':'NSIS 설치 파일 또는 앱의 업데이트 버튼으로 설치함.')+'\n\n- 헤더 크기에 맞춰 설정·검색·팝업 제목줄의 좌우 여백도 함께 조절함.\n- Windows 최소화·최대화·닫기 아이콘을 다른 상단 버튼과 같은 높이로 정렬함.\n- 작은 헤더에서도 페이지 제목의 가독성을 유지하고 글자·줄 높이를 정돈함.\n');
       // Draft keeps partial uploads out of update discovery. Existing tags never get overwritten.
       const existing=spawnSync('gh',['release','view',tag,'--repo',repository,'--json','tagName'],{encoding:'utf8',stdio:['ignore','pipe','pipe']});
       if(existing.status===0){
