@@ -58,7 +58,7 @@ function publish(stageOnly=false){
       run(process.execPath,[join(desktop,'node_modules/@tauri-apps/cli/tauri.js'),'signer','sign','-f',key,'-p',process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '',artifact],desktop);
       const tag='v'+meta.version+'-'+meta.platform;
       const checksum=join(dir,'SHA256SUMS');writeFileSync(checksum,meta.sha256+'  '+meta.file+'\n');
-      const notes=join(dir,'release-notes.md');writeFileSync(notes,'MARKPROTO '+meta.version+' ('+meta.platform+')\n\n'+(extension==='.dmg'?'DMG를 열고 앱을 응용 프로그램 폴더로 끌어다 놓아 대치함. Apple 공증은 아직 적용하지 않음.':'NSIS 설치 파일 또는 앱의 업데이트 버튼으로 설치함.')+'\n\n페이지 링크를 복사해 다른 문서에서 연결할 수 있음. 편집 중에는 Windows Ctrl 클릭·macOS Cmd 클릭으로 이동하며 터치에서는 탭으로 열 수 있음.\n');
+      const notes=join(dir,'release-notes.md');writeFileSync(notes,'MARKPROTO '+meta.version+' ('+meta.platform+')\n\n'+(extension==='.dmg'?'DMG를 열고 앱을 응용 프로그램 폴더로 끌어다 놓아 대치함. Apple 공증은 아직 적용하지 않음.':'NSIS 설치 파일 또는 앱의 업데이트 버튼으로 설치함.')+'\n\n- 좁은 창에서 페이지 제목과 상단 버튼이 겹치는 현상을 수정함.\n- 기본 프로필 아이콘 크기를 다른 상단 아이콘과 일치시킴.\n- 다시 실행할 때 이전 창 크기·위치·최대화 상태를 복원함.\n');
       // Draft keeps partial uploads out of update discovery. Existing tags never get overwritten.
       const existing=spawnSync('gh',['release','view',tag,'--repo',repository,'--json','tagName'],{encoding:'utf8',stdio:['ignore','pipe','pipe']});
       if(existing.status===0){
