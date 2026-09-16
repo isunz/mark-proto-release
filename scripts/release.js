@@ -58,7 +58,7 @@ function publish(stageOnly=false){
       run(process.execPath,[join(desktop,'node_modules/@tauri-apps/cli/tauri.js'),'signer','sign','-f',key,'-p',process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '',artifact],desktop);
       const tag='v'+meta.version+'-'+meta.platform;
       const checksum=join(dir,'SHA256SUMS');writeFileSync(checksum,meta.sha256+'  '+meta.file+'\n');
-      const notes=join(dir,'release-notes.md');writeFileSync(notes,'MARKPROTO '+meta.version+' ('+meta.platform+')\n\n'+(extension==='.dmg'?'DMG를 열고 앱을 응용 프로그램 폴더로 끌어다 놓아 대치함. Apple 공증은 아직 적용하지 않음.':'NSIS 설치 파일 또는 앱의 업데이트 버튼으로 설치함.')+'\n\n- 네이버 로그인 계정별 개인 문서와 이미지를 서버에 저장하고 다른 기기에서 이어서 편집함.\n- 오프라인 변경을 로컬에 보관하고 서버 연결이 복구되면 동기화함.\n- 기존 로컬 문서는 자동 업로드하지 않고 선택한 문서만 계정으로 복사함.\n- 동시 수정 충돌 시 로컬 원본을 별도 사본으로 보존함.\n\n계정 동기화에는 새 버전의 실행 중인 MARKPROTO 웹 서버와 동일한 서버 주소 설정이 필요함. 서버 중단 시 로컬 편집은 유지함.\n');
+      const notes=join(dir,'release-notes.md');writeFileSync(notes,existsSync(join(root,'notes',meta.version+'.md'))?readFileSync(join(root,'notes',meta.version+'.md'),'utf8'):'MARKPROTO '+meta.version+' ('+meta.platform+')\n\n'+(extension==='.dmg'?'DMG를 열고 앱을 응용 프로그램 폴더로 끌어다 놓아 대치함. Apple 공증은 아직 적용하지 않음.':'NSIS 설치 파일 또는 앱의 업데이트 버튼으로 설치함.')+'\n\n- 네이버 로그인 계정별 개인 문서와 이미지를 서버에 저장하고 다른 기기에서 이어서 편집함.\n- 오프라인 변경을 로컬에 보관하고 서버 연결이 복구되면 동기화함.\n- 기존 로컬 문서는 자동 업로드하지 않고 선택한 문서만 계정으로 복사함.\n- 동시 수정 충돌 시 로컬 원본을 별도 사본으로 보존함.\n\n계정 동기화에는 새 버전의 실행 중인 MARKPROTO 웹 서버와 동일한 서버 주소 설정이 필요함. 서버 중단 시 로컬 편집은 유지함.\n');
       // Draft keeps partial uploads out of update discovery. Existing tags never get overwritten.
       const existing=spawnSync('gh',['release','view',tag,'--repo',repository,'--json','tagName'],{encoding:'utf8',stdio:['ignore','pipe','pipe']});
       if(existing.status===0){
